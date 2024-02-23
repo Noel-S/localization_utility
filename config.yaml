@@ -1,0 +1,9 @@
+# Localization utility
+# This file contains the configuration for the localization utility
+# This program will generate the localization files for the specified locales
+
+origin_file_extension: dart
+origin_locale: es
+output_locales: [en, fr, de]
+output_folder: output
+input_folder: test_folder
