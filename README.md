@@ -15,4 +15,5 @@ origin_locale: es
 output_locales: [en, fr, de]
 output_folder: output
 input_folder: test_folder
+copy_mode: false
 ```
