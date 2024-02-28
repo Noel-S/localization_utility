@@ -24,6 +24,7 @@ type Config struct {
 	OutputLocales       []string `yaml:"output_locales"`
 	OutputFolder        string   `yaml:"output_folder"`
 	InputFolder         string   `yaml:"input_folder"`
+	CopyMode            bool     `yaml:"copy_mode"`
 }
 
 func main() {
@@ -44,9 +45,9 @@ func main() {
 	if config.OriginLocale == "" {
 		log.Fatal("origin_locale is required")
 	}
-	if len(config.OutputLocales) == 0 {
-		log.Fatal("output_locales is required")
-	}
+	// if len(config.OutputLocales) == 0 {
+	// 	log.Fatal("output_locales is required")
+	// }
 	if config.OutputFolder == "" {
 		log.Fatal("output_folder is required")
 	}
@@ -59,30 +60,30 @@ func main() {
 	fmt.Println("Output locales: " + strings.Join(config.OutputLocales, ", "))
 	fmt.Println("Output folder: " + config.OutputFolder)
 
-	filepath.Walk(config.InputFolder, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Println(err)
-			return nil
+	if config.CopyMode {
+		mapFiles := make(map[string]bool)
+		mapFiles[config.OriginLocale+"."+config.OriginFileExtension] = true
+		for _, locale := range config.OutputLocales {
+			mapFiles[locale+"."+config.OriginFileExtension] = true
 		}
-		if !info.IsDir() {
-			if info.Name() == config.OriginLocale+"."+config.OriginFileExtension {
-				fmt.Println(path)
-				data, err := os.ReadFile(path)
-				checkErr(err)
 
-				// copy original file to the new folder
-				pathComponents := strings.Split(path, "/")
-				destPath := config.OutputFolder + "/" + strings.Join(pathComponents[1:], "/")
-				// create the directory structure in the new folder
-				err = os.MkdirAll(filepath.Dir(destPath), os.ModePerm)
-				checkErr(err)
-				// copy the file to the new folder
-				err = os.WriteFile(destPath, data, 0644)
-				checkErr(err)
+		filepath.Walk(config.InputFolder, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				fmt.Println(err)
+				return nil
+			}
+			if !info.IsDir() {
+				if _, ok := mapFiles[info.Name()]; ok {
+					// fmt.Println(path)
+					data, err := os.ReadFile(path)
+					checkErr(err)
 
-				for _, locale := range config.OutputLocales {
-					// copy the file with the locale as the name
-					destPath := config.OutputFolder + "/" + strings.Join(pathComponents[1:len(pathComponents)-1], "/") + "/" + locale + "." + config.OriginFileExtension
+					inputPathComponents := strings.Split(config.InputFolder, "/")
+					prefixToRemove := strings.Join(inputPathComponents[1:], "/")
+					// copy original file to the new folder
+					pathComponents := strings.Split(path, "/")
+					destPath := config.OutputFolder + "/" + strings.Join(pathComponents[1:], "/")
+					destPath = strings.Replace(destPath, prefixToRemove, "", 1)
 					// create the directory structure in the new folder
 					err = os.MkdirAll(filepath.Dir(destPath), os.ModePerm)
 					checkErr(err)
@@ -91,8 +92,49 @@ func main() {
 					checkErr(err)
 				}
 			}
-		}
-		return nil
-	})
+			return nil
+		})
+	} else {
+		filepath.Walk(config.InputFolder, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				fmt.Println(err)
+				return nil
+			}
+			if !info.IsDir() {
+				if info.Name() == config.OriginLocale+"."+config.OriginFileExtension {
+					// fmt.Println(path)
+					data, err := os.ReadFile(path)
+					checkErr(err)
+
+					inputPathComponents := strings.Split(config.InputFolder, "/")
+					prefixToRemove := strings.Join(inputPathComponents[1:], "/")
+					// copy original file to the new folder
+					pathComponents := strings.Split(path, "/")
+					destPath := config.OutputFolder + "/" + strings.Join(pathComponents[1:], "/")
+					destPath = strings.Replace(destPath, prefixToRemove, "", 1)
+					// create the directory structure in the new folder
+					err = os.MkdirAll(filepath.Dir(destPath), os.ModePerm)
+					checkErr(err)
+					// copy the file to the new folder
+					err = os.WriteFile(destPath, data, 0644)
+					checkErr(err)
+
+					for _, locale := range config.OutputLocales {
+						// copy the file with the locale as the name
+						destPath := config.OutputFolder + "/" + strings.Join(pathComponents[1:len(pathComponents)-1], "/") + "/" + locale + "." + config.OriginFileExtension
+						destPath = strings.Replace(destPath, prefixToRemove, "", 1)
+						// create the directory structure in the new folder
+						err = os.MkdirAll(filepath.Dir(destPath), os.ModePerm)
+						checkErr(err)
+						// copy the file to the new folder
+						err = os.WriteFile(destPath, data, 0644)
+						checkErr(err)
+					}
+				}
+			}
+			return nil
+		})
+	}
+
 	s.Stop()
 }
