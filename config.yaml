@@ -4,6 +4,7 @@
 
 origin_file_extension: dart
 origin_locale: es
-output_locales: [en, fr, de]
+output_locales: [en, fr, id, pt, sw, it, de, zh, ja, ko, ru, hi, nl]
 output_folder: output
-input_folder: test_folder
+input_folder: /Users/noel/Documents/xilion/flutter/yimitpv
+copy_mode: true
